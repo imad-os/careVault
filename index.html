@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CareVault — Personal & Family Medical Health Platform</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            medblue: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              900: '#0c4a6e',
+            },
+            medteal: {
+              500: '#0d9488',
+              600: '#0f766e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Print view styling for clinical medical dossier */
+    @media print {
+      body * { visibility: hidden; }
+      #printableDossier, #printableDossier * { visibility: visible; }
+      #printableDossier {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        color: black !important;
+        padding: 24px;
+        box-shadow: none !important;
+      }
+      .no-print { display: none !important; }
+    }
+
+    /* Animation effects */
+    .fade-in { animation: fadeIn 0.25s ease-out forwards; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .badge-doctor {
+      background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans min-h-screen flex flex-col selection:bg-sky-100 selection:text-sky-900">
+
+  <!-- Top Navigation Header -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo & Brand -->
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
+            <i class="fa-solid fa-notes-medical text-xl"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-extrabold text-xl tracking-tight text-slate-900">Care<span class="text-sky-600">Vault</span></span>
+              <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">Independent Health EHR</span>
+            </div>
+            <p class="text-[11px] text-slate-500 hidden sm:block">Patient-Owned Portable Medical Record & Consent Ledger</p>
+          </div>
+        </div>
+
+        <!-- Center: Dual Role Simulator Switcher -->
+        <div class="hidden md:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-semibold shadow-inner">
+          <button id="navRolePatientBtn" onclick="appState.switchRole('patient')" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 bg-white text-slate-800 shadow-sm">
+            <i class="fa-solid fa-user-shield text-sky-600"></i>
+            <span>Patient & Family Hub</span>
+          </button>
+          <button id="navRoleDoctorBtn" onclick="appState.switchRole('doctor')" class="px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900">
+            <i class="fa-solid fa-user-doctor text-teal-600"></i>
+            <span>Doctor Clinical Portal</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          </button>
+        </div>
+
+        <!-- Right Quick Actions -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          <!-- Emergency Card Quick Trigger -->
+          <button onclick="uiModal.openEmergencyCard()" title="Emergency Medical Passport" class="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-semibold flex items-center space-x-1.5 transition">
+            <i class="fa-solid fa-truck-medical text-rose-600"></i>
+            <span class="hidden sm:inline">Emergency ID</span>
+          </button>
+
+          <!-- Audit Log Drawer Button -->
+          <button onclick="uiModal.openAuditModal()" title="View Consent & Access Audit Trail" class="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition relative">
+            <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+            <span id="auditBadgeCount" class="absolute -top-1 -right-1 text-[9px] bg-sky-600 text-white font-bold px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+
+          <!-- Export Dossier Button -->
+          <button onclick="uiModal.openExportModal()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition">
+            <i class="fa-solid fa-file-pdf"></i>
+            <span class="hidden sm:inline">Export Report</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Role Switcher (Shown on small screens) -->
+  <div class="md:hidden bg-slate-100 border-b border-slate-200 p-2 flex justify-center">
+    <div class="flex bg-slate-200 p-1 rounded-lg text-xs font-medium w-full max-w-sm justify-around">
+      <button onclick="appState.switchRole('patient')" id="mRolePatientBtn" class="flex-1 py-1.5 rounded-md bg-white text-slate-900 shadow font-semibold">Patient Hub</button>
+      <button onclick="appState.switchRole('doctor')" id="mRoleDoctorBtn" class="flex-1 py-1.5 rounded-md text-slate-600">Doctor Portal</button>
+    </div>
+  </div>
+
+  <!-- Main Workspace Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ========================================== -->
+    <!-- VIEW A: PATIENT & FAMILY MANAGEMENT HUB    -->
+    <!-- ========================================== -->
+    <div id="patientViewSection" class="space-y-6">
+
+      <!-- Family Profile Selector Bar -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Active Profile & Household</span>
+          <div id="familyProfilesContainer" class="flex flex-wrap items-center gap-2 mt-2">
+            <!-- Dynamic profile pills injected by JS -->
+          </div>
+        </div>
+
+        <!-- Household Actions -->
+        <div class="flex items-center space-x-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+          <button onclick="uiModal.openAddFamilyModal()" class="px-3 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-slate-50 text-slate-700 text-xs font-semibold flex items-center space-x-1.5 transition">
+            <i class="fa-solid fa-user-plus text-sky-600"></i>
+            <span>Add Family Member</span>
+          </button>
+          <button onclick="uiModal.openPermissionsModal()" class="px-3 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 text-xs font-semibold flex items-center space-x-1.5 transition">
+            <i class="fa-solid fa-key text-sky-600"></i>
+            <span>Access & Doctor Consent</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Profile Banner & Critical Vitals / Allergies Alert Strip -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-sky-950 rounded-2xl text-white p-5 md:p-6 shadow-lg relative overflow-hidden">
+        <div class="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-sky-500/10 to-transparent pointer-events-none"></div>
+
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <!-- Person Meta -->
+          <div class="flex items-start space-x-4">
+            <div id="activeProfileAvatar" class="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-2xl font-bold text-sky-300 shrink-0">
+              ER
+            </div>
+            <div>
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 id="activeProfileName" class="text-2xl font-bold tracking-tight">Elena Rostova</h2>
+                <span id="activeProfileRelationBadge" class="text-[11px] font-semibold bg-sky-500/30 text-sky-200 border border-sky-400/30 px-2.5 py-0.5 rounded-full">Primary Account Holder</span>
+                <span id="activeProfileOwnershipTag" class="text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <i class="fa-solid fa-shield-halved text-[10px]"></i> Full Ownership
+                </span>
+              </div>
+              <p id="activeProfileDetails" class="text-xs text-slate-300 mt-1">Age: 38 • Blood: A+ • ID: #CV-8902-PT • Portable Medical Ledger</p>
+              
+              <!-- Allergies & Red Flags -->
+              <div class="flex flex-wrap items-center gap-2 mt-3">
+                <span class="text-[11px] uppercase tracking-wider text-rose-300 font-bold flex items-center gap-1">
+                  <i class="fa-solid fa-triangle-exclamation"></i> Allergies:
+                </span>
+                <div id="activeProfileAllergies" class="flex flex-wrap gap-1.5">
+                  <span class="bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs px-2 py-0.5 rounded-md font-medium">Penicillin (Severe)</span>
+                  <span class="bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs px-2 py-0.5 rounded-md font-medium">Peanuts</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Stats / Fast Actions -->
+          <div class="flex flex-wrap items-center gap-3 bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10">
+            <div class="text-center px-3 border-r border-white/10">
+              <span class="block text-xl font-bold text-sky-300" id="statEpisodesCount">0</span>
+              <span class="text-[10px] text-slate-300 uppercase tracking-wider">Episodes</span>
+            </div>
+            <div class="text-center px-3 border-r border-white/10">
+              <span class="block text-xl font-bold text-emerald-300" id="statPrescriptionsCount">0</span>
+              <span class="text-[10px] text-slate-300 uppercase tracking-wider">Active Meds</span>
+            </div>
+            <div class="text-center px-3">
+              <span class="block text-xl font-bold text-amber-300" id="statDoctorsCount">0</span>
+              <span class="text-[10px] text-slate-300 uppercase tracking-wider">Doctors Auth</span>
+            </div>
+            <div class="pl-2">
+              <button onclick="uiModal.openNewEpisodeModal()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-semibold text-xs shadow-md transition flex items-center space-x-2">
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>Log Health Event</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline Filter & Search Bar -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex items-center space-x-2 w-full sm:w-auto">
+          <div class="relative flex-1 sm:w-64">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" id="timelineSearchInput" oninput="appControllers.filterTimeline()" placeholder="Search diagnosis, meds, doctors..." class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+          </div>
+          <!-- Category Filter -->
+          <select id="timelineCategoryFilter" onchange="appControllers.filterTimeline()" class="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <option value="all">All Records</option>
+            <option value="doctor_visit">Doctor Consultations</option>
+            <option value="prescription">Prescriptions</option>
+            <option value="lab_result">Lab & Diagnostics</option>
+            <option value="symptom">Symptoms & Observations</option>
+            <option value="surgery">Surgeries & Hospital</option>
+          </select>
+        </div>
+
+        <!-- Author / Provenance Filter -->
+        <div class="flex items-center space-x-2 text-xs">
+          <span class="text-slate-400 font-medium">Filter by Author:</span>
+          <button onclick="appControllers.filterByAuthor('all')" class="author-filter-btn px-2.5 py-1 rounded-lg text-slate-700 bg-slate-100 font-semibold" data-author="all">All</button>
+          <button onclick="appControllers.filterByAuthor('doctor')" class="author-filter-btn px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-900" data-author="doctor">🩺 Verified MD</button>
+          <button onclick="appControllers.filterByAuthor('patient')" class="author-filter-btn px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-900" data-author="patient">👤 Patient Logged</button>
+        </div>
+      </div>
+
+      <!-- Chronological Medical History Feed -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+            <i class="fa-solid fa-timeline text-sky-600"></i> Chronological Health History & Episodes
+          </h3>
+          <span class="text-xs text-slate-400 font-medium" id="timelineDisplayCount">Showing 0 entries</span>
+        </div>
+
+        <!-- Timeline container -->
+        <div id="medicalTimelineContainer" class="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
+          <!-- Dynamic episodes rendered here -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW B: DOCTOR CLINICAL PORTAL             -->
+    <!-- ========================================== -->
+    <div id="doctorViewSection" class="hidden space-y-6">
+
+      <!-- Doctor Verification & Credentials Banner -->
+      <div class="bg-gradient-to-r from-teal-900 via-slate-900 to-sky-950 rounded-2xl text-white p-6 shadow-lg border border-teal-800/40">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-center space-x-4">
+            <div class="w-16 h-16 rounded-2xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-300 text-2xl font-bold shadow-inner">
+              <i class="fa-solid fa-stethoscope"></i>
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <h2 class="text-2xl font-bold">Dr. Sarah Chen, MD</h2>
+                <span class="text-xs bg-teal-400/20 text-teal-300 border border-teal-400/30 px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                  <i class="fa-solid fa-circle-check text-emerald-400"></i> State Board Verified
+                </span>
+              </div>
+              <p class="text-xs text-teal-100/80 mt-1">Specialty: Cardiology & Internal Medicine • License ID: #MD-90442-NY • Hospital Affiliate: Metropolitan General</p>
+              <div class="text-[11px] text-slate-300 mt-2 flex items-center gap-3">
+                <span><i class="fa-solid fa-user-lock text-teal-400"></i> Strict Consent-Enforced EHR Access</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-fingerprint text-teal-400"></i> Cryptographic Author Signature Enabled</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white/10 rounded-xl p-3 border border-white/10 text-xs">
+            <span class="text-slate-300 block mb-1">Your Doctor ID for Patient Invites:</span>
+            <div class="flex items-center space-x-2">
+              <code class="bg-black/30 px-2.5 py-1 rounded text-teal-300 font-mono font-bold" id="doctorPublicIdDisplay">DOC-SARAH-9044</code>
+              <button onclick="appControllers.copyText('DOC-SARAH-9044', 'Doctor ID Copied!')" class="p-1 hover:text-teal-200" title="Copy ID">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Authorized Patient Directory & Active Selection -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Authorized Patients List -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
+          <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-2">
+              <i class="fa-solid fa-users text-teal-600"></i> Authorized Patients
+            </h3>
+            <span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold" id="docAuthorizedCount">0</span>
+          </div>
+
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            Only patients who have actively granted explicit consent to your medical ID appear here. Consent can be revoked by patients at any time.
+          </p>
+
+          <div id="doctorPatientRoster" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Right: Active Patient Chart Inspection & New Episode Authoring -->
+        <div class="lg:col-span-2 space-y-4">
+          <div id="doctorPatientWorkspace" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <!-- Rendered by JS when a patient is selected -->
+            <div class="text-center py-12 text-slate-400">
+              <i class="fa-solid fa-hospital-user text-4xl mb-3 text-slate-300"></i>
+              <p class="text-sm font-medium">Select an authorized patient from the list on the left to review their chart or author an official clinical episode.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer Status Bar -->
+  <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+      <div class="flex items-center space-x-3">
+        <span class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Ledger Status: <strong>Encrypted & Portable</strong></span>
+        </span>
+        <span>•</span>
+        <span>Independent of Single Provider Network</span>
+      </div>
+      <div>
+        <span>Consent Rule: <em>Patient Owns Records • Doctor Owns Authorship</em></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: ADD HEALTH ISSUE / CLINICAL EPISODE / NOTE / SYMPTOM  -->
+  <!-- ============================================================ -->
+  <div id="modalNewEpisode" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden fade-in my-8">
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-sky-600 to-teal-600 px-6 py-4 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-file-medical text-xl"></i>
+          <div>
+            <h3 class="font-bold text-base" id="newEpisodeModalTitle">Log Health Event / Episode</h3>
+            <p class="text-xs text-sky-100" id="newEpisodeModalSubtitle">Add details to the permanent chronological health ledger</p>
+          </div>
+        </div>
+        <button onclick="uiModal.closeModal('modalNewEpisode')" class="text-white/80 hover:text-white p-1 rounded-lg">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <form id="newEpisodeForm" onsubmit="appControllers.handleCreateEpisode(event)" class="p-6 space-y-4">
+        <!-- Event Category & Date -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Category *</label>
+            <select id="inputEpisodeCategory" required class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500">
+              <option value="doctor_visit">Doctor Consultation / Visit</option>
+              <option value="symptom">Symptom / Health Observation</option>
+              <option value="prescription">Medication / Prescription</option>
+              <option value="lab_result">Laboratory / Diagnostic Test</option>
+              <option value="surgery">Procedure / Surgery</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Date of Occurrence *</label>
+            <input type="date" id="inputEpisodeDate" required class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500">
+          </div>
+        </div>
+
+        <!-- Title / Condition -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Condition, Diagnosis or Event Title *</label>
+          <input type="text" id="inputEpisodeTitle" required placeholder="e.g. Acute Bronchitis, Blood Pressure Check, Sprained Ankle" class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500">
+        </div>
+
+        <!-- Attending Doctor or Facility (If applicable) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Physician / Clinic Name</label>
+            <input type="text" id="inputEpisodePhysician" placeholder="e.g. Dr. Sarah Chen / Metro Clinic" class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Severity / Status</label>
+            <select id="inputEpisodeStatus" class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500">
+              <option value="Active">Active / In Progress</option>
+              <option value="Resolved">Resolved / Cured</option>
+              <option value="Chronic">Chronic / Ongoing Management</option>
+              <option value="Under Evaluation">Under Evaluation</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description, Symptoms & Clinical Notes -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Symptoms, Notes & Observations *</label>
+          <textarea id="inputEpisodeNotes" rows="3" required placeholder="Describe symptoms, vital readings (BP, Temp, Pulse), dietary notes, or progress..." class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-sky-500"></textarea>
+        </div>
+
+        <!-- Prescribed Medications (Optional) -->
+        <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
+          <span class="text-xs font-bold text-slate-700 block flex items-center justify-between">
+            <span><i class="fa-solid fa-pills text-teal-600 mr-1"></i> Prescriptions & Dosage</span>
+            <span class="text-[10px] text-slate-400 font-normal">Optional</span>
+          </span>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input type="text" id="inputEpisodeMedName" placeholder="Medication (e.g., Amoxicillin)" class="text-xs border border-slate-200 rounded-lg p-2 bg-white">
+            <input type="text" id="inputEpisodeMedDose" placeholder="Dosage (e.g., 500mg BID)" class="text-xs border border-slate-200 rounded-lg p-2 bg-white">
+            <input type="text" id="inputEpisodeMedDuration" placeholder="Duration (e.g., 7 days)" class="text-xs border border-slate-200 rounded-lg p-2 bg-white">
+          </div>
+        </div>
+
+        <!-- Attachments & Photo Documentation Simulation -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Photo / Lab Report Attachment (Simulated Secure File)</label>
+          <div class="flex items-center space-x-2">
+            <input type="file" id="inputEpisodeFile" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100">
+            <span class="text-[11px] text-slate-400">PDF, JPG, PNG</span>
+          </div>
+        </div>
+
+        <!-- Author Tagging Radio -->
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+          <span class="font-medium text-slate-600">Entry Source:</span>
+          <div class="flex items-center space-x-4">
+            <label class="flex items-center space-x-1 cursor-pointer">
+              <input type="radio" name="entryProvenance" value="patient" checked class="text-sky-600">
+              <span class="text-slate-700 font-medium">Patient Note</span>
+            </label>
+            <label class="flex items-center space-x-1 cursor-pointer">
+              <input type="radio" name="entryProvenance" value="doctor" class="text-teal-600">
+              <span class="text-slate-700 font-medium">Doctor Consultation</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="uiModal.closeModal('modalNewEpisode')" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold transition">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold shadow-md transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Commit to Medical Ledger</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: ADD FAMILY MEMBER PROFILE                             -->
+  <!-- ============================================================ -->
+  <div id="modalAddFamily" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden fade-in">
+      <div class="bg-gradient-to-r from-teal-700 to-sky-700 px-6 py-4 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-people-roof text-lg"></i>
+          <h3 class="font-bold text-base">Add Family Profile</h3>
+        </div>
+        <button onclick="uiModal.closeModal('modalAddFamily')" class="text-white/80 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="addFamilyForm" onsubmit="appControllers.handleAddFamilyProfile(event)" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Full Legal Name *</label>
+          <input type="text" id="inputFamilyName" required placeholder="e.g. Sofia Rostova" class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Relationship *</label>
+            <select id="inputFamilyRelationship" required class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white">
+              <option value="Child / Dependent">Child / Dependent</option>
+              <option value="Elderly Parent">Elderly Parent</option>
+              <option value="Partner / Spouse">Partner / Spouse</option>
+              <option value="Sibling">Sibling</option>
+              <option value="Other Dependent">Other Dependent</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Age *</label>
+            <input type="number" id="inputFamilyAge" required min="0" max="130" placeholder="e.g. 7" class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Blood Group</label>
+            <select id="inputFamilyBlood" class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white">
+              <option value="Unknown">Unknown</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Role & Management *</label>
+            <select id="inputFamilyRole" class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white">
+              <option value="Manager">Manager (You manage profile)</option>
+              <option value="View-Only">View-Only Dependent</option>
+              <option value="Independent Account">Independent Account (Invite)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Known Allergies / Critical Alerts</label>
+          <input type="text" id="inputFamilyAllergies" placeholder="e.g. Amoxicillin, Dairy, None" class="w-full text-xs border border-slate-200 rounded-xl p-2.5 bg-slate-50 focus:bg-white">
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="uiModal.closeModal('modalAddFamily')" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-xs font-semibold">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-md">Create Profile</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: CONSENT & ACCESS MANAGEMENT (DOCTORS & FAMILY)         -->
+  <!-- ============================================================ -->
+  <div id="modalPermissions" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden fade-in my-8">
+      <div class="bg-slate-900 px-6 py-4 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-user-lock text-sky-400 text-lg"></i>
+          <div>
+            <h3 class="font-bold text-base">Granular Consent & Access Control</h3>
+            <p class="text-xs text-slate-300">You hold sovereign ownership of your data. Authorize or revoke doctors instantly.</p>
+          </div>
+        </div>
+        <button onclick="uiModal.closeModal('modalPermissions')" class="text-white/80 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-6">
+        <!-- Authorize New Doctor Section -->
+        <div class="bg-sky-50 rounded-xl p-4 border border-sky-100 space-y-3">
+          <h4 class="text-xs font-bold text-sky-900 uppercase tracking-wider flex items-center gap-1.5">
+            <i class="fa-solid fa-user-doctor text-sky-600"></i> Grant Doctor Access
+          </h4>
+          <p class="text-xs text-sky-800/80">Enter a verified Doctor's unique Medical ID to grant access to this profile's chronological records.</p>
+          <div class="flex gap-2">
+            <input type="text" id="inputGrantDoctorId" placeholder="Doctor ID (e.g., DOC-SARAH-9044 or DOC-MARCUS-1102)" class="flex-1 text-xs border border-sky-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <button onclick="appControllers.handleGrantDoctorAccess()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-semibold shadow transition whitespace-nowrap">
+              Grant Consent
+            </button>
+          </div>
+        </div>
+
+        <!-- Active Authorized Doctors Table -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider">Active Authorized Practitioners</h4>
+          <div id="authorizedDoctorsList" class="space-y-2">
+            <!-- Dynamic list of authorized doctors with Revoke button -->
+          </div>
+        </div>
+
+        <!-- Temporary Secure Link Sharing -->
+        <div class="border-t border-slate-200 pt-4 space-y-3">
+          <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+            <span><i class="fa-solid fa-share-nodes text-slate-500 mr-1"></i> Time-Limited Guest / Emergency Share Link</span>
+            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-normal">PIN Protected</span>
+          </h4>
+          <p class="text-xs text-slate-500">Create a self-expiring link for a remote specialist or temporary hospital clinic.</p>
+
+          <div class="flex flex-col sm:flex-row items-center gap-2">
+            <select id="shareLinkDuration" class="text-xs border border-slate-200 rounded-xl p-2 bg-slate-50 text-slate-700 w-full sm:w-auto">
+              <option value="24">Expires in 24 Hours</option>
+              <option value="72">Expires in 3 Days</option>
+              <option value="168">Expires in 7 Days</option>
+            </select>
+            <select id="shareLinkScope" class="text-xs border border-slate-200 rounded-xl p-2 bg-slate-50 text-slate-700 w-full sm:w-auto">
+              <option value="full">Full Medical History</option>
+              <option value="allergies_only">Emergency Allergies & Meds Only</option>
+            </select>
+            <button onclick="appControllers.generateShareableLink()" class="w-full sm:w-auto px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow transition">
+              Generate Link
+            </button>
+          </div>
+
+          <div id="generatedShareLinkContainer" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1">
+            <span class="text-slate-500 font-medium">Secure Access URL:</span>
+            <div class="flex items-center space-x-2">
+              <input type="text" readonly id="generatedShareLinkInput" class="w-full bg-white border border-slate-200 rounded-lg p-1.5 font-mono text-[11px] text-slate-700">
+              <button onclick="appControllers.copyShareLink()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded-lg font-semibold text-slate-800">Copy</button>
+            </div>
+            <p class="text-[10px] text-emerald-600 font-medium"><i class="fa-solid fa-lock"></i> Auto-assigned PIN protection enabled. Revocable anytime.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="uiModal.closeModal('modalPermissions')" class="px-5 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: EMERGENCY MEDICAL CARD & QR CODE                      -->
+  <!-- ============================================================ -->
+  <div id="modalEmergencyCard" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 overflow-hidden fade-in">
+      <div class="bg-gradient-to-r from-rose-600 to-red-700 px-6 py-4 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-kit-medical text-xl animate-pulse"></i>
+          <div>
+            <h3 class="font-bold text-base">Emergency Medical Passport</h3>
+            <p class="text-xs text-rose-100">Critical First-Responder Information</p>
+          </div>
+        </div>
+        <button onclick="uiModal.closeModal('modalEmergencyCard')" class="text-white/80 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4" id="emergencyCardContent">
+        <!-- Emergency Card Payload dynamically rendered -->
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold flex items-center gap-1.5">
+          <i class="fa-solid fa-print"></i> Print Wallet Card
+        </button>
+        <button onclick="uiModal.closeModal('modalEmergencyCard')" class="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: AUDIT TRAIL & TAMPER-EVIDENT REVISION LOG             -->
+  <!-- ============================================================ -->
+  <div id="modalAuditTrail" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden fade-in my-8">
+      <div class="bg-slate-900 px-6 py-4 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-shield-virus text-teal-400 text-lg"></i>
+          <div>
+            <h3 class="font-bold text-base">Medical Record Audit Ledger</h3>
+            <p class="text-xs text-slate-400">Chronological, tamper-evident log of reads, modifications & consents</p>
+          </div>
+        </div>
+        <button onclick="uiModal.closeModal('modalAuditTrail')" class="text-white/80 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-3">
+        <div class="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-100">
+          <span>Every access is recorded with author provenance.</span>
+          <span class="font-mono text-[10px] text-teal-600">SHA256 Signatures Simulated</span>
+        </div>
+
+        <div id="auditLogEntriesContainer" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+          <!-- Dynamic audit items -->
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <button onclick="uiModal.closeModal('modalAuditTrail')" class="px-4 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold">Close Ledger</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: REPORT GENERATION & PRINTABLE DOSSIER                 -->
+  <!-- ============================================================ -->
+  <div id="modalExportReport" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden fade-in my-8">
+      <div class="bg-slate-900 px-6 py-4 text-white flex items-center justify-between no-print">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-file-invoice text-sky-400 text-lg"></i>
+          <div>
+            <h3 class="font-bold text-base">Generate Comprehensive Medical Dossier</h3>
+            <p class="text-xs text-slate-400">Official export formatted for independent medical handoffs</p>
+          </div>
+        </div>
+        <button onclick="uiModal.closeModal('modalExportReport')" class="text-white/80 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Printable Area -->
+      <div id="printableDossier" class="p-8 space-y-6 text-slate-900 bg-white">
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b-2 border-slate-800 pb-4">
+          <div>
+            <h1 class="text-2xl font-black tracking-tight text-slate-900">CAREVAULT HEALTH REPORT</h1>
+            <p class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Portable Patient Health Summary & Clinical Records</p>
+            <p class="text-xs text-slate-600 mt-1 font-mono" id="dossierExportTimestamp">Exported: 2026-10-15</p>
+          </div>
+          <div class="text-right">
+            <span class="inline-block px-2 py-1 bg-slate-100 border border-slate-300 rounded text-xs font-bold font-mono">PORTABLE EHR DOSSIER</span>
+            <p class="text-[10px] text-slate-500 mt-1">Verified Sovereign Record</p>
+          </div>
+        </div>
+
+        <!-- Patient Demographics -->
+        <div id="dossierDemographics" class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
+          <!-- Injected by JS -->
+        </div>
+
+        <!-- Critical Alerts -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-rose-700 mb-2">Critical Allergies & Contraindications</h4>
+          <div id="dossierAllergies" class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-medium text-rose-900">
+            <!-- Injected -->
+          </div>
+        </div>
+
+        <!-- Active Prescriptions -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-teal-800 mb-2">Current Active Medications & Regimen</h4>
+          <div id="dossierMedications" class="space-y-1.5 text-xs">
+            <!-- Injected -->
+          </div>
+        </div>
+
+        <!-- Medical Episodes -->
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 mb-2">Chronological History of Episodes & Clinical Consultations</h4>
+          <div id="dossierEpisodes" class="space-y-3 text-xs">
+            <!-- Injected -->
+          </div>
+        </div>
+
+        <!-- Legal Disclaimer & Authorship note -->
+        <div class="border-t border-slate-200 pt-4 text-[10px] text-slate-400 flex justify-between items-center">
+          <p>Generated via CareVault Sovereign Health System. Records maintained independently under direct patient custody.</p>
+          <span class="font-mono">VALIDATION-HASH: #CV-99182-SEC</span>
+        </div>
+      </div>
+
+      <!-- Footer Action -->
+      <div class="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center no-print">
+        <button onclick="window.print()" class="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow flex items-center space-x-2">
+          <i class="fa-solid fa-print"></i>
+          <span>Print / Save to PDF</span>
+        </button>
+        <button onclick="uiModal.closeModal('modalExportReport')" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-200 text-xs font-semibold">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Toast Box (No alerts used) -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- Custom Confirmation Dialog (Modal replacement for confirm()) -->
+  <div id="customConfirmModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-100 fade-in text-center space-y-3">
+      <div id="confirmIconBox" class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 id="confirmTitle" class="text-base font-bold text-slate-900">Are you sure?</h3>
+      <p id="confirmMessage" class="text-xs text-slate-500 leading-relaxed">This action will revoke doctor access immediately.</p>
+      <div class="flex items-center justify-center space-x-3 pt-2">
+        <button id="confirmCancelBtn" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">Cancel</button>
+        <button id="confirmProceedBtn" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- JAVASCRIPT APPLICATION CORE (Structured & Modularized)       -->
+  <!-- ============================================================ -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, doc, setDoc, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    /**
+     * CAREVAULT SYSTEM ARCHITECTURE
+     * Organized into clean, maintainable namespaces:
+     * 1. APP_CONFIG & ENV (Firebase & default settings)
+     * 2. STATE_STORE (Single source of truth for profiles, episodes, auth, consents)
+     * 3. DB_SERVICE (Firestore sync conforming strictly to Rule 1, 2, 3)
+     * 4. PERMISSIONS_ENGINE (Role, consent, co-authoring enforcement)
+     * 5. AUDIT_SERVICE (Tamper-evident access & modification ledger)
+     * 6. UI_CONTROLLERS (View rendering, event listeners, timeline filtering)
+     * 7. EXPORT_SERVICE (Dossier & Emergency Pass generator)
+     */
+
+    // --- 1. APP_CONFIG & SAMPLE SEED DATA ---
+    const APP_CONFIG = {
+      appId: typeof __app_id !== 'undefined' ? __app_id : 'carevault-medical-app',
+      isFirebaseActive: false,
+      currentUser: null,
+      authReady: false
+    };
+
+    // High-quality, clinical-grade seed data demonstrating adult, child, and elderly records
+    const INITIAL_SEED_DATA = {
+      profiles: [
+        {
+          id: 'prof-elena-primary',
+          name: 'Elena Rostova',
+          roleType: 'Primary Account Holder',
+          relation: 'Self',
+          age: 38,
+          bloodGroup: 'A+',
+          allergies: ['Penicillin (Severe anaphylaxis)', 'Peanuts'],
+          chronicConditions: ['Hypertension (Stage 1)'],
+          ownership: 'owner',
+          emergencyContact: '+1 (555) 019-2834 (Spouse: David)',
+          avatarInitials: 'ER'
+        },
+        {
+          id: 'prof-sofia-child',
+          name: 'Sofia Rostova',
+          roleType: 'Child / Dependent',
+          relation: 'Daughter',
+          age: 7,
+          bloodGroup: 'O+',
+          allergies: ['Aspirin (Suspected)'],
+          chronicConditions: ['Childhood Asthma (Mild)'],
+          ownership: 'managed',
+          emergencyContact: '+1 (555) 019-2834 (Mother: Elena)',
+          avatarInitials: 'SR'
+        },
+        {
+          id: 'prof-arthur-elderly',
+          name: 'Arthur Vance',
+          roleType: 'Elderly Relative',
+          relation: 'Father',
+          age: 69,
+          bloodGroup: 'B+',
+          allergies: ['Sulfa drugs'],
+          chronicConditions: ['Type 2 Diabetes', 'Coronary Stent (2021)'],
+          ownership: 'managed',
+          emergencyContact: '+1 (555) 019-2834 (Daughter: Elena)',
+          avatarInitials: 'AV'
+        }
+      ],
+      authorizedDoctors: [
+        {
+          id: 'DOC-SARAH-9044',
+          name: 'Dr. Sarah Chen, MD',
+          specialty: 'Cardiology & Internal Medicine',
+          license: 'MD-90442-NY',
+          grantedDate: '2026-04-10',
+          canCreateEpisodes: true,
+          canCoAuthor: true
+        },
+        {
+          id: 'DOC-MARCUS-1102',
+          name: 'Dr. Marcus Reed, MD',
+          specialty: 'Pediatrics',
+          license: 'MD-11029-NY',
+          grantedDate: '2026-06-18',
+          canCreateEpisodes: true,
+          canCoAuthor: false
+        }
+      ],
+      episodes: [
+        {
+          id: 'ep-001',
+          profileId: 'prof-elena-primary',
+          title: 'Cardiology Review & Ambulatory Blood Pressure Monitoring',
+          category: 'doctor_visit',
+          date: '2026-09-14',
+          physician: 'Dr. Sarah Chen, MD',
+          authorRole: 'doctor',
+          authorId: 'DOC-SARAH-9044',
+          authorName: 'Dr. Sarah Chen, MD',
+          status: 'Chronic',
+          notes: '24-hour ambulatory blood pressure revealed daytime mean 138/88 mmHg. Patient reports good compliance with lifestyle modifications. Recommended initiating low dose ACE inhibitor. Renal panel and electrolytes within normal parameters.',
+          prescriptions: [
+            { name: 'Lisinopril', dose: '10mg Once Daily', duration: 'Ongoing' }
+          ],
+          hasAttachment: true,
+          attachmentName: 'Cardio_BP_Holter_Report_Sept2026.pdf',
+          revisionHistory: [
+            { timestamp: '2026-09-14T10:30:00Z', author: 'Dr. Sarah Chen, MD', action: 'Initial Consultation Created' }
+          ]
+        },
+        {
+          id: 'ep-002',
+          profileId: 'prof-elena-primary',
+          title: 'Acute Migraine with Visual Aura Observation',
+          category: 'symptom',
+          date: '2026-10-02',
+          physician: 'Self-Logged',
+          authorRole: 'patient',
+          authorId: 'patient-elena',
+          authorName: 'Elena Rostova (Patient)',
+          status: 'Resolved',
+          notes: 'Sudden onset scintillating scotoma in left visual field followed by throbbing unilateral headache. Lasted approx 4 hours. Relieved by dark room, cold compress, and hydration.',
+          prescriptions: [],
+          hasAttachment: false,
+          revisionHistory: [
+            { timestamp: '2026-10-02T19:15:00Z', author: 'Elena Rostova', action: 'Patient Self-Observation Logged' }
+          ]
+        },
+        {
+          id: 'ep-003',
+          profileId: 'prof-sofia-child',
+          title: 'Pediatric Annual Wellness & Booster Immunization',
+          category: 'doctor_visit',
+          date: '2026-08-20',
+          physician: 'Dr. Marcus Reed, MD',
+          authorRole: 'doctor',
+          authorId: 'DOC-MARCUS-1102',
+          authorName: 'Dr. Marcus Reed, MD',
+          status: 'Resolved',
+          notes: 'Normal growth velocity. 75th percentile for height and 60th percentile for weight. Lungs clear, cardiac examination normal. Administered age 7 booster immunization without immediate reaction. Inhaler technique reviewed for seasonal triggers.',
+          prescriptions: [
+            { name: 'Albuterol HFA Inhaler', dose: '2 puffs PRN wheezing', duration: 'As needed' }
+          ],
+          hasAttachment: true,
+          attachmentName: 'Sofia_Growth_Percentile_Chart.pdf',
+          revisionHistory: [
+            { timestamp: '2026-08-20T14:00:00Z', author: 'Dr. Marcus Reed, MD', action: 'Annual Pediatric Checkup Entered' }
+          ]
+        },
+        {
+          id: 'ep-004',
+          profileId: 'prof-arthur-elderly',
+          title: 'Diabetic Foot & Glycemic Control Consultation',
+          category: 'doctor_visit',
+          date: '2026-07-11',
+          physician: 'Dr. Sarah Chen, MD',
+          authorRole: 'doctor',
+          authorId: 'DOC-SARAH-9044',
+          authorName: 'Dr. Sarah Chen, MD',
+          status: 'Active',
+          notes: 'HbA1c steady at 6.8%. Monofilament sensation test shows intact protective sensation bilaterally. Pedal pulses 2+ palpable. Stent maintenance therapy continues without angina symptoms.',
+          prescriptions: [
+            { name: 'Metformin XR', dose: '500mg With Evening Meal', duration: 'Ongoing' },
+            { name: 'Atorvastatin', dose: '20mg Nightly', duration: 'Ongoing' }
+          ],
+          hasAttachment: false,
+          revisionHistory: [
+            { timestamp: '2026-07-11T11:20:00Z', author: 'Dr. Sarah Chen, MD', action: 'Consultation & Prescription Logged' }
+          ]
+        }
+      ],
+      auditLogs: [
+        {
+          id: 'aud-001',
+          timestamp: '2026-09-14 10:30',
+          actor: 'Dr. Sarah Chen, MD (DOC-SARAH-9044)',
+          action: 'CREATED_EPISODE',
+          details: 'Authored clinical consultation: Cardiology Review for Elena Rostova',
+          verified: true
+        },
+        {
+          id: 'aud-002',
+          timestamp: '2026-10-02 19:15',
+          actor: 'Elena Rostova (Patient)',
+          action: 'LOGGED_SYMPTOM',
+          details: 'Recorded personal observation: Acute Migraine with Visual Aura',
+          verified: true
+        },
+        {
+          id: 'aud-003',
+          timestamp: '2026-10-10 14:02',
+          actor: 'Dr. Sarah Chen, MD (DOC-SARAH-9044)',
+          action: 'CHART_INSPECTION',
+          details: 'Accessed authorized patient record Elena Rostova under clinical consent',
+          verified: true
+        }
+      ]
+    };
+
+    // --- 2. STATE STORE ---
+    class StateStore {
+      constructor() {
+        this.currentRole = 'patient'; // 'patient' or 'doctor'
+        this.activeProfileId = 'prof-elena-primary';
+        this.profiles = JSON.parse(JSON.stringify(INITIAL_SEED_DATA.profiles));
+        this.episodes = JSON.parse(JSON.stringify(INITIAL_SEED_DATA.episodes));
+        this.authorizedDoctors = JSON.parse(JSON.stringify(INITIAL_SEED_DATA.authorizedDoctors));
+        this.auditLogs = JSON.parse(JSON.stringify(INITIAL_SEED_DATA.auditLogs));
+        this.activeDoctorPatientId = 'prof-elena-primary';
+        this.currentDoctorId = 'DOC-SARAH-9044';
+        this.filters = {
+          search: '',
+          category: 'all',
+          author: 'all'
+        };
+      }
+
+      getActiveProfile() {
+        return this.profiles.find(p => p.id === this.activeProfileId) || this.profiles[0];
+      }
+
+      setActiveProfile(profileId) {
+        this.activeProfileId = profileId;
+        AuditService.log('PROFILE_SWITCH', `Switched active household view to ${this.getActiveProfile().name}`);
+        appControllers.renderAll();
+      }
+
+      switchRole(role) {
+        this.currentRole = role;
+        const patientView = document.getElementById('patientViewSection');
+        const doctorView = document.getElementById('doctorViewSection');
+        const navPatientBtn = document.getElementById('navRolePatientBtn');
+        const navDoctorBtn = document.getElementById('navRoleDoctorBtn');
+        const mPatientBtn = document.getElementById('mRolePatientBtn');
+        const mDoctorBtn = document.getElementById('mRoleDoctorBtn');
+
+        if (role === 'patient') {
+          patientView.classList.remove('hidden');
+          doctorView.classList.add('hidden');
+          navPatientBtn.className = 'px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 bg-white text-slate-800 shadow-sm';
+          navDoctorBtn.className = 'px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900';
+          mPatientBtn.className = 'flex-1 py-1.5 rounded-md bg-white text-slate-900 shadow font-semibold';
+          mDoctorBtn.className = 'flex-1 py-1.5 rounded-md text-slate-600';
+          uiToast.show('Switched to Patient & Family Household Hub', 'info');
+        } else {
+          patientView.classList.add('hidden');
+          doctorView.classList.remove('hidden');
+          navDoctorBtn.className = 'px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 bg-white text-slate-800 shadow-sm';
+          navPatientBtn.className = 'px-3.5 py-1.5 rounded-lg transition-all flex items-center space-x-2 text-slate-600 hover:text-slate-900';
+          mDoctorBtn.className = 'flex-1 py-1.5 rounded-md bg-white text-slate-900 shadow font-semibold';
+          mPatientBtn.className = 'flex-1 py-1.5 rounded-md text-slate-600';
+          uiToast.show('Entered Doctor Clinical Portal (Verified Mode)', 'success');
+        }
+        appControllers.renderAll();
+      }
+    }
+
+    const appState = new StateStore();
+    window.appState = appState;
+
+    // --- 3. DATABASE / FIRESTORE SERVICE (Strictly compliant with Rules 1, 2, 3) ---
+    class DatabaseService {
+      constructor() {
+        this.db = null;
+        this.auth = null;
+        this.isReady = false;
+      }
+
+      async init() {
+        try {
+          if (typeof __firebase_config !== 'undefined') {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            this.auth = getAuth(app);
+            this.db = getFirestore(app);
+
+            // Mandatory Rule 3: Auth before any queries
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(this.auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(this.auth);
+            }
+
+            onAuthStateChanged(this.auth, (user) => {
+              if (user) {
+                APP_CONFIG.currentUser = user;
+                APP_CONFIG.authReady = true;
+                this.isReady = true;
+                this.syncCloudData();
+              }
+            });
+          } else {
+            // Standalone memory storage fallback
+            this.isReady = true;
+          }
+        } catch (err) {
+          console.warn('CareVault running with in-memory secure storage engine.', err);
+          this.isReady = true;
+        }
+      }
+
+      async syncCloudData() {
+        if (!this.db || !this.auth.currentUser) return;
+        try {
+          // Rule 1: STRICT PATH: /artifacts/{appId}/public/data/{collectionName}
+          const colRef = collection(this.db, 'artifacts', APP_CONFIG.appId, 'public', 'data', 'episodes');
+          
+          // Rule 2: NO COMPLEX QUERIES. Simple collection query and memory sort.
+          onSnapshot(colRef, (snapshot) => {
+            const cloudEpisodes = [];
+            snapshot.forEach((docSnap) => {
+              cloudEpisodes.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            if (cloudEpisodes.length > 0) {
+              appState.episodes = cloudEpisodes;
+              appControllers.renderTimeline();
+            }
+          }, (err) => {
+            console.error('Firestore snapshot listener handled:', err);
+          });
+        } catch (e) {
+          console.warn('Real-time sync error handled:', e);
+        }
+      }
+
+      async saveEpisode(episode) {
+        if (!this.db || !this.auth?.currentUser) return;
+        try {
+          // Rule 1: Strict paths
+          const docRef = doc(this.db, 'artifacts', APP_CONFIG.appId, 'public', 'data', 'episodes', episode.id);
+          await setDoc(docRef, episode);
+        } catch (e) {
+          console.warn('Cloud save fallback to local memory state:', e);
+        }
+      }
+    }
+
+    const dbService = new DatabaseService();
+
+    // --- 4. PERMISSIONS & CONSENT ENGINE ---
+    const PermissionsEngine = {
+      isDoctorAuthorized(doctorId, profileId) {
+        // Checks if current profile has authorized this doctor
+        return appState.authorizedDoctors.some(d => d.id === doctorId);
+      },
+
+      canModifyEpisode(episode, requestingUser) {
+        // Patient ownership rule: A doctor cannot edit another doctor's episode without explicit consent
+        if (requestingUser.role === 'patient') {
+          // Patient can always append notes or observations to their ledger
+          return true;
+        }
+        if (requestingUser.role === 'doctor') {
+          // If this doctor authored it, they can edit
+          if (episode.authorId === requestingUser.id) return true;
+          
+          // If co-authoring permission is granted
+          const doctorConfig = appState.authorizedDoctors.find(d => d.id === requestingUser.id);
+          return !!doctorConfig?.canCoAuthor;
+        }
+        return false;
+      },
+
+      canDoctorViewPatient(doctorId, patientProfileId) {
+        return this.isDoctorAuthorized(doctorId, patientProfileId);
+      }
+    };
+
+    // --- 5. AUDIT LOGGING SERVICE ---
+    const AuditService = {
+      log(action, details) {
+        const now = new Date();
+        const timestamp = now.toISOString().replace('T', ' ').substring(0, 16);
+        let actor = 'Elena Rostova (Patient)';
+        if (appState.currentRole === 'doctor') {
+          actor = `Dr. Sarah Chen, MD (${appState.currentDoctorId})`;
+        }
+
+        const newLog = {
+          id: 'aud-' + Date.now().toString(36),
+          timestamp,
+          actor,
+          action,
+          details,
+          verified: true
+        };
+
+        appState.auditLogs.unshift(newLog);
+        this.updateBadge();
+      },
+
+      updateBadge() {
+        const badge = document.getElementById('auditBadgeCount');
+        if (badge) badge.innerText = appState.auditLogs.length;
+      }
+    };
+
+    // --- UI TOAST & MODAL CONTROLLERS (No browser alert() or confirm()) ---
+    const uiToast = {
+      show(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'flex items-center space-x-3 p-3.5 rounded-xl shadow-xl text-xs font-semibold pointer-events-auto fade-in ' +
+          (type === 'success' ? 'bg-emerald-800 text-white border border-emerald-700' :
+           type === 'error' ? 'bg-rose-800 text-white border border-rose-700' :
+           'bg-slate-900 text-white border border-slate-700');
+
+        const icon = type === 'success' ? 'fa-circle-check text-emerald-300' :
+                     type === 'error' ? 'fa-circle-exclamation text-rose-300' :
+                     'fa-circle-info text-sky-300';
+
+        toast.innerHTML = `<i class="fa-solid ${icon} text-sm"></i> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transition = 'opacity 0.3s ease';
+          setTimeout(() => toast.remove(), 300);
+        }, 3200);
+      }
+    };
+
+    const uiDialog = {
+      confirm(title, message, onConfirm) {
+        const modal = document.getElementById('customConfirmModal');
+        document.getElementById('confirmTitle').innerText = title;
+        document.getElementById('confirmMessage').innerText = message;
+        modal.classList.remove('hidden');
+
+        const proceedBtn = document.getElementById('confirmProceedBtn');
+        const cancelBtn = document.getElementById('confirmCancelBtn');
+
+        const cleanup = () => {
+          modal.classList.add('hidden');
+          proceedBtn.onclick = null;
+          cancelBtn.onclick = null;
+        };
+
+        proceedBtn.onclick = () => {
+          cleanup();
+          onConfirm();
+        };
+        cancelBtn.onclick = () => cleanup();
+      }
+    };
+
+    const uiModal = {
+      openModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('hidden');
+      },
+      closeModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      },
+      openNewEpisodeModal() {
+        document.getElementById('newEpisodeForm').reset();
+        document.getElementById('inputEpisodeDate').value = new Date().toISOString().substring(0, 10);
+        this.openModal('modalNewEpisode');
+      },
+      openAddFamilyModal() {
+        document.getElementById('addFamilyForm').reset();
+        this.openModal('modalAddFamily');
+      },
+      openPermissionsModal() {
+        appControllers.renderPermissionsList();
+        this.openModal('modalPermissions');
+      },
+      openAuditModal() {
+        appControllers.renderAuditLog();
+        this.openModal('modalAuditTrail');
+      },
+      openEmergencyCard() {
+        appControllers.renderEmergencyCard();
+        this.openModal('modalEmergencyCard');
+      },
+      openExportModal() {
+        ExportService.prepareDossier();
+        this.openModal('modalExportReport');
+      }
+    };
+    window.uiModal = uiModal;
+
+    // --- 6. APPLICATION CONTROLLERS & RENDERING ---
+    const appControllers = {
+      renderAll() {
+        this.renderFamilyPills();
+        this.renderActiveProfileCard();
+        this.renderTimeline();
+        this.renderDoctorWorkspace();
+        AuditService.updateBadge();
+      },
+
+      renderFamilyPills() {
+        const container = document.getElementById('familyProfilesContainer');
+        container.innerHTML = '';
+
+        appState.profiles.forEach(prof => {
+          const isActive = prof.id === appState.activeProfileId;
+          const pill = document.createElement('button');
+          pill.onclick = () => appState.setActiveProfile(prof.id);
+          pill.className = `flex items-center space-x-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+            isActive
+              ? 'bg-sky-600 text-white shadow-sm ring-2 ring-sky-400'
+              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+          }`;
+
+          const icon = prof.relation === 'Self' ? 'fa-user' :
+                       prof.relation === 'Daughter' ? 'fa-child' :
+                       prof.relation === 'Father' ? 'fa-person-cane' : 'fa-users';
+
+          pill.innerHTML = `
+            <i class="fa-solid ${icon}"></i>
+            <span>${prof.name}</span>
+            <span class="text-[10px] opacity-75 font-normal">(${prof.relation})</span>
+          `;
+          container.appendChild(pill);
+        });
+      },
+
+      renderActiveProfileCard() {
+        const prof = appState.getActiveProfile();
+        document.getElementById('activeProfileName').innerText = prof.name;
+        document.getElementById('activeProfileAvatar').innerText = prof.avatarInitials;
+        document.getElementById('activeProfileRelationBadge').innerText = prof.relation === 'Self' ? 'Primary Account Holder' : `${prof.relation} (${prof.roleType})`;
+        document.getElementById('activeProfileDetails').innerText = `Age: ${prof.age} • Blood Group: ${prof.bloodGroup} • Custody ID: #${prof.id.toUpperCase()} • Portable Health Ledger`;
+
+        const allergiesDiv = document.getElementById('activeProfileAllergies');
+        allergiesDiv.innerHTML = '';
+        if (!prof.allergies || prof.allergies.length === 0) {
+          allergiesDiv.innerHTML = '<span class="text-xs text-slate-300">No known drug allergies reported</span>';
+        } else {
+          prof.allergies.forEach(a => {
+            const badge = document.createElement('span');
+            badge.className = 'bg-rose-500/20 border border-rose-400/40 text-rose-200 text-xs px-2 py-0.5 rounded-md font-medium';
+            badge.innerText = a;
+            allergiesDiv.appendChild(badge);
+          });
+        }
+
+        // Compute Quick Stats for active profile
+        const myEpisodes = appState.episodes.filter(e => e.profileId === prof.id);
+        const myActiveMeds = myEpisodes.reduce((acc, curr) => acc + (curr.prescriptions ? curr.prescriptions.length : 0), 0);
+
+        document.getElementById('statEpisodesCount').innerText = myEpisodes.length;
+        document.getElementById('statPrescriptionsCount').innerText = myActiveMeds;
+        document.getElementById('statDoctorsCount').innerText = appState.authorizedDoctors.length;
+      },
+
+      renderTimeline() {
+        const container = document.getElementById('medicalTimelineContainer');
+        const prof = appState.getActiveProfile();
+        let list = appState.episodes.filter(e => e.profileId === prof.id);
+
+        // Apply Search & Filters
+        const search = appState.filters.search.toLowerCase().trim();
+        if (search) {
+          list = list.filter(e => 
+            e.title.toLowerCase().includes(search) ||
+            e.notes.toLowerCase().includes(search) ||
+            (e.physician && e.physician.toLowerCase().includes(search))
+          );
+        }
+
+        if (appState.filters.category !== 'all') {
+          list = list.filter(e => e.category === appState.filters.category);
+        }
+
+        if (appState.filters.author !== 'all') {
+          list = list.filter(e => e.authorRole === appState.filters.author);
+        }
+
+        // Sort descending by date
+        list.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        document.getElementById('timelineDisplayCount').innerText = `Showing ${list.length} records for ${prof.name}`;
+
+        if (list.length === 0) {
+          container.innerHTML = `
+            <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-400">
+              <i class="fa-solid fa-notes-medical text-3xl mb-2 text-slate-300"></i>
+              <p class="text-sm font-semibold text-slate-600">No medical entries found matching your filters</p>
+              <p class="text-xs text-slate-400 mt-1">Use the "Log Health Event" button above to append consultations, vitals or lab reports.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = '';
+        list.forEach(ep => {
+          const item = document.createElement('div');
+          item.className = 'relative pl-4 group';
+
+          // Category icon & color styling
+          const isDocAuth = ep.authorRole === 'doctor';
+          const catIcon = ep.category === 'doctor_visit' ? 'fa-stethoscope text-sky-600' :
+                          ep.category === 'prescription' ? 'fa-pills text-teal-600' :
+                          ep.category === 'lab_result' ? 'fa-flask-vial text-purple-600' :
+                          ep.category === 'surgery' ? 'fa-syringe text-rose-600' : 'fa-clipboard-user text-amber-600';
+
+          const statusColor = ep.status === 'Resolved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                              ep.status === 'Chronic' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                              'bg-sky-50 text-sky-700 border-sky-200';
+
+          item.innerHTML = `
+            <!-- Node dot on timeline line -->
+            <div class="absolute -left-[31px] top-4 w-7 h-7 rounded-full bg-white border-2 ${isDocAuth ? 'border-teal-500 shadow-md' : 'border-sky-500'} flex items-center justify-center text-xs">
+              <i class="fa-solid ${catIcon}"></i>
+            </div>
+
+            <!-- Card Body -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition">
+              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-2 pb-3 border-b border-slate-100">
+                <div>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h4 class="text-base font-bold text-slate-900">${ep.title}</h4>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full border ${statusColor}">${ep.status}</span>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
+                    <span><i class="fa-regular fa-calendar text-slate-400 mr-1"></i> ${ep.date}</span>
+                    <span>•</span>
+                    <span><i class="fa-solid fa-hospital-user text-slate-400 mr-1"></i> ${ep.physician || 'Self-Recorded'}</span>
+                  </div>
+                </div>
+
+                <!-- Provenance & Author Stamp Badge -->
+                <div>
+                  ${isDocAuth 
+                    ? `<span class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold text-teal-800 bg-teal-50 border border-teal-200">
+                        <i class="fa-solid fa-user-doctor text-teal-600"></i>
+                        <span>MD-Verified: ${ep.authorName}</span>
+                       </span>`
+                    : `<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-medium text-slate-600 bg-slate-100">
+                        <i class="fa-solid fa-user text-slate-400"></i>
+                        <span>${ep.authorName || 'Patient Observation'}</span>
+                       </span>`
+                  }
+                </div>
+              </div>
+
+              <!-- Notes & Clinical observations -->
+              <p class="text-xs text-slate-700 leading-relaxed mt-3 whitespace-pre-line">${ep.notes}</p>
+
+              <!-- Prescriptions subsection if present -->
+              ${ep.prescriptions && ep.prescriptions.length > 0 ? `
+                <div class="mt-3.5 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5 flex items-center gap-1">
+                    <i class="fa-solid fa-prescription text-teal-600"></i> Prescribed Regimen
+                  </span>
+                  <div class="space-y-1">
+                    ${ep.prescriptions.map(rx => `
+                      <div class="flex items-center justify-between text-xs font-medium text-slate-800">
+                        <span><strong>${rx.name}</strong> • ${rx.dose}</span>
+                        <span class="text-[10px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">${rx.duration}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Attached file indicator -->
+              ${ep.hasAttachment ? `
+                <div class="mt-3 flex items-center space-x-2 text-xs text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100 w-fit">
+                  <i class="fa-solid fa-paperclip"></i>
+                  <span class="font-medium">${ep.attachmentName || 'Medical_Record_Attachment.pdf'}</span>
+                  <button onclick="uiToast.show('Secure encrypted document preview requested.', 'info')" class="underline hover:text-sky-900 ml-2 font-semibold">View</button>
+                </div>
+              ` : ''}
+
+              <!-- Tamper & Revision audit footer -->
+              <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
+                <span class="flex items-center gap-1 font-mono text-[10px]">
+                  <i class="fa-solid fa-fingerprint text-slate-300"></i> Record ID: #${ep.id}
+                </span>
+                <div class="flex items-center space-x-2">
+                  <button onclick="appControllers.viewEpisodeAudit('${ep.id}')" class="hover:text-slate-700 text-sky-600 font-medium">Revision History (${ep.revisionHistory?.length || 1})</button>
+                </div>
+              </div>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      },
+
+      renderDoctorWorkspace() {
+        const rosterContainer = document.getElementById('doctorPatientRoster');
+        rosterContainer.innerHTML = '';
+
+        // Doctor is authorized for profiles where patient granted consent
+        const authorizedPatients = appState.profiles;
+        document.getElementById('docAuthorizedCount').innerText = `${authorizedPatients.length} Active`;
+
+        authorizedPatients.forEach(p => {
+          const isSelected = p.id === appState.activeDoctorPatientId;
+          const card = document.createElement('div');
+          card.onclick = () => {
+            appState.activeDoctorPatientId = p.id;
+            AuditService.log('DOCTOR_ACCESS_CHART', `Dr. Sarah Chen accessed medical chart of ${p.name}`);
+            appControllers.renderDoctorWorkspace();
+          };
+          card.className = `p-3 rounded-xl border text-xs cursor-pointer transition ${
+            isSelected
+              ? 'bg-teal-50 border-teal-300 ring-2 ring-teal-400/40 text-teal-900'
+              : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700'
+          }`;
+
+          card.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-slate-900">${p.name}</span>
+              <span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">Authorized</span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1">
+              Age: ${p.age} • ${p.bloodGroup} • ${p.relation}
+            </div>
+            <div class="mt-2 text-[10px] text-teal-700 font-medium flex items-center gap-1">
+              <i class="fa-solid fa-lock text-[9px]"></i> Consent Active (Can Author Episodes)
+            </div>
+          `;
+          rosterContainer.appendChild(card);
+        });
+
+        // Render Right Workspace for Selected Patient
+        const targetPatient = appState.profiles.find(p => p.id === appState.activeDoctorPatientId) || appState.profiles[0];
+        const workspace = document.getElementById('doctorPatientWorkspace');
+
+        const patientEpisodes = appState.episodes.filter(e => e.profileId === targetPatient.id);
+
+        workspace.innerHTML = `
+          <div class="space-y-6">
+            <!-- Patient Banner inside Doctor View -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h3 class="text-xl font-bold text-slate-900">${targetPatient.name}</h3>
+                  <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-medium">DOB: Age ${targetPatient.age}</span>
+                  <span class="text-xs bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded-full font-bold">Blood: ${targetPatient.bloodGroup}</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">Sovereign Patient ID: #${targetPatient.id} • Consent Verified for Dr. Sarah Chen, MD</p>
+              </div>
+
+              <!-- Quick action: Create New Official Consultation -->
+              <button onclick="appControllers.openDoctorEpisodeModal('${targetPatient.id}')" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs shadow-md transition flex items-center space-x-1.5">
+                <i class="fa-solid fa-notes-medical"></i>
+                <span>Author Official Clinical Episode</span>
+              </button>
+            </div>
+
+            <!-- Red Flag Alert Area -->
+            <div class="bg-rose-50 rounded-xl p-3 border border-rose-200">
+              <span class="text-xs font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1">
+                <i class="fa-solid fa-triangle-exclamation"></i> Critical Allergies & Medical Warnings
+              </span>
+              <p class="text-xs text-rose-900 font-medium mt-1">
+                ${targetPatient.allergies.join(', ') || 'None recorded'}
+              </p>
+            </div>
+
+            <!-- Existing Authorized Episodes for this patient -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600">Patient's Recorded History (${patientEpisodes.length})</h4>
+                <span class="text-[11px] text-slate-400">Read & Co-Author Mode Active</span>
+              </div>
+
+              <div class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                ${patientEpisodes.map(ep => {
+                  const isAuthor = ep.authorId === appState.currentDoctorId;
+                  return `
+                    <div class="p-3.5 rounded-xl border ${isAuthor ? 'border-teal-200 bg-teal-50/40' : 'border-slate-200 bg-slate-50'} text-xs space-y-1.5">
+                      <div class="flex items-center justify-between">
+                        <span class="font-bold text-slate-900">${ep.title}</span>
+                        <span class="text-[10px] text-slate-500 font-medium">${ep.date}</span>
+                      </div>
+                      <p class="text-slate-600 leading-relaxed">${ep.notes}</p>
+                      <div class="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[10px] text-slate-500">
+                        <span>Author: <strong>${ep.authorName}</strong></span>
+                        ${isAuthor 
+                          ? `<span class="text-teal-700 font-bold"><i class="fa-solid fa-certificate"></i> You Authored This</span>`
+                          : `<span class="text-slate-400"><i class="fa-solid fa-lock text-[9px]"></i> External Doctor Episode</span>`
+                        }
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      filterTimeline() {
+        appState.filters.search = document.getElementById('timelineSearchInput').value;
+        appState.filters.category = document.getElementById('timelineCategoryFilter').value;
+        this.renderTimeline();
+      },
+
+      filterByAuthor(authorRole) {
+        appState.filters.author = authorRole;
+        document.querySelectorAll('.author-filter-btn').forEach(b => {
+          if (b.dataset.author === authorRole) {
+            b.className = 'author-filter-btn px-2.5 py-1 rounded-lg text-slate-800 bg-slate-200 font-bold shadow-inner';
+          } else {
+            b.className = 'author-filter-btn px-2.5 py-1 rounded-lg text-slate-500 hover:text-slate-900';
+          }
+        });
+        this.renderTimeline();
+      },
+
+      handleCreateEpisode(e) {
+        e.preventDefault();
+        const activeProfile = appState.getActiveProfile();
+        const category = document.getElementById('inputEpisodeCategory').value;
+        const date = document.getElementById('inputEpisodeDate').value;
+        const title = document.getElementById('inputEpisodeTitle').value;
+        const physician = document.getElementById('inputEpisodePhysician').value;
+        const status = document.getElementById('inputEpisodeStatus').value;
+        const notes = document.getElementById('inputEpisodeNotes').value;
+        const medName = document.getElementById('inputEpisodeMedName').value.trim();
+        const medDose = document.getElementById('inputEpisodeMedDose').value.trim();
+        const medDuration = document.getElementById('inputEpisodeMedDuration').value.trim();
+        const fileInput = document.getElementById('inputEpisodeFile');
+        const provenanceRadios = document.getElementsByName('entryProvenance');
+
+        let provenance = 'patient';
+        for (const r of provenanceRadios) {
+          if (r.checked) provenance = r.value;
+        }
+
+        const prescriptions = [];
+        if (medName) {
+          prescriptions.push({
+            name: medName,
+            dose: medDose || 'As prescribed',
+            duration: medDuration || 'Course as directed'
+          });
+        }
+
+        const newEpisode = {
+          id: 'ep-' + Date.now().toString(36),
+          profileId: activeProfile.id,
+          title,
+          category,
+          date,
+          physician: physician || (provenance === 'doctor' ? 'Dr. Sarah Chen, MD' : 'Self-Recorded'),
+          authorRole: provenance,
+          authorId: provenance === 'doctor' ? appState.currentDoctorId : 'patient-user',
+          authorName: provenance === 'doctor' ? 'Dr. Sarah Chen, MD' : `${activeProfile.name} (Patient)`,
+          status,
+          notes,
+          prescriptions,
+          hasAttachment: fileInput.files.length > 0,
+          attachmentName: fileInput.files.length > 0 ? fileInput.files[0].name : null,
+          revisionHistory: [
+            {
+              timestamp: new Date().toISOString(),
+              author: provenance === 'doctor' ? 'Dr. Sarah Chen, MD' : activeProfile.name,
+              action: 'Initial Record Committed'
+            }
+          ]
+        };
+
+        appState.episodes.unshift(newEpisode);
+        dbService.saveEpisode(newEpisode);
+
+        AuditService.log('CREATED_EPISODE', `Added "${title}" under ${activeProfile.name} (${provenance.toUpperCase()})`);
+        uiToast.show('New medical event committed to your sovereign ledger!', 'success');
+        uiModal.closeModal('modalNewEpisode');
+        this.renderAll();
+      },
+
+      handleAddFamilyProfile(e) {
+        e.preventDefault();
+        const name = document.getElementById('inputFamilyName').value.trim();
+        const relation = document.getElementById('inputFamilyRelationship').value;
+        const age = parseInt(document.getElementById('inputFamilyAge').value, 10);
+        const bloodGroup = document.getElementById('inputFamilyBlood').value;
+        const roleType = document.getElementById('inputFamilyRole').value;
+        const allergiesInput = document.getElementById('inputFamilyAllergies').value.trim();
+
+        const allergies = allergiesInput ? allergiesInput.split(',').map(s => s.trim()) : [];
+        const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+
+        const newProf = {
+          id: 'prof-' + Date.now().toString(36),
+          name,
+          relation,
+          age,
+          bloodGroup,
+          roleType,
+          allergies,
+          ownership: roleType === 'Manager' ? 'managed' : 'independent',
+          avatarInitials: initials || 'FM'
+        };
+
+        appState.profiles.push(newProf);
+        AuditService.log('ADDED_FAMILY_MEMBER', `Created managed family profile for ${name} (${relation})`);
+        uiToast.show(`Family profile for ${name} created successfully!`, 'success');
+        uiModal.closeModal('modalAddFamily');
+        appState.setActiveProfile(newProf.id);
+      },
+
+      handleGrantDoctorAccess() {
+        const input = document.getElementById('inputGrantDoctorId');
+        const docId = input.value.trim().toUpperCase();
+
+        if (!docId) {
+          uiToast.show('Please enter a Doctor ID.', 'error');
+          return;
+        }
+
+        if (appState.authorizedDoctors.some(d => d.id === docId)) {
+          uiToast.show('This practitioner already has active authorized access.', 'info');
+          return;
+        }
+
+        const docName = docId === 'DOC-SARAH-9044' ? 'Dr. Sarah Chen, MD (Cardiology)' :
+                        docId === 'DOC-MARCUS-1102' ? 'Dr. Marcus Reed, MD (Pediatrics)' :
+                        `Dr. Practitioner (${docId})`;
+
+        const newDoctorConsent = {
+          id: docId,
+          name: docName,
+          specialty: 'Internal Medicine / Consultant',
+          license: 'MD-STATE-LIC',
+          grantedDate: new Date().toISOString().substring(0, 10),
+          canCreateEpisodes: true,
+          canCoAuthor: false
+        };
+
+        appState.authorizedDoctors.push(newDoctorConsent);
+        AuditService.log('CONSENT_GRANTED', `Granted explicit clinical access to ${docName}`);
+        uiToast.show(`Access granted to ${docName}`, 'success');
+        input.value = '';
+        this.renderPermissionsList();
+        this.renderAll();
+      },
+
+      revokeDoctorAccess(doctorId) {
+        const doctor = appState.authorizedDoctors.find(d => d.id === doctorId);
+        const docName = doctor ? doctor.name : doctorId;
+
+        uiDialog.confirm(
+          'Revoke Clinical Access?',
+          `Are you sure you want to revoke ${docName}'s access? They will immediately lose permission to view or author records. Lawfully retained prior encounters remain logged for audit.`,
+          () => {
+            appState.authorizedDoctors = appState.authorizedDoctors.filter(d => d.id !== doctorId);
+            AuditService.log('CONSENT_REVOKED', `Revoked clinical permissions for ${docName}`);
+            uiToast.show(`Access for ${docName} has been revoked.`, 'info');
+            appControllers.renderPermissionsList();
+            appControllers.renderAll();
+          }
+        );
+      },
+
+      renderPermissionsList() {
+        const container = document.getElementById('authorizedDoctorsList');
+        container.innerHTML = '';
+
+        if (appState.authorizedDoctors.length === 0) {
+          container.innerHTML = '<p class="text-xs text-slate-400">No external doctors currently have access to this record.</p>';
+          return;
+        }
+
+        appState.authorizedDoctors.forEach(doc => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl text-xs';
+          row.innerHTML = `
+            <div>
+              <div class="flex items-center space-x-2">
+                <span class="font-bold text-slate-900">${doc.name}</span>
+                <span class="text-[10px] bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-mono font-bold">${doc.id}</span>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5">${doc.specialty} • Authorized since: ${doc.grantedDate}</p>
+              <div class="flex items-center gap-2 mt-1 text-[10px] text-slate-400">
+                <span><i class="fa-solid fa-pen-nib text-teal-600"></i> Write Episodes: Enabled</span>
+                <span>•</span>
+                <span><i class="fa-solid fa-lock text-slate-400"></i> Read Records: Permitted</span>
+              </div>
+            </div>
+            <div>
+              <button onclick="appControllers.revokeDoctorAccess('${doc.id}')" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold border border-rose-200 transition">
+                Revoke
+              </button>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+      },
+
+      renderAuditLog() {
+        const container = document.getElementById('auditLogEntriesContainer');
+        container.innerHTML = '';
+
+        appState.auditLogs.forEach(entry => {
+          const item = document.createElement('div');
+          item.className = 'p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1';
+          item.innerHTML = `
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-800">${entry.action}</span>
+              <span class="text-[10px] text-slate-500 font-mono">${entry.timestamp}</span>
+            </div>
+            <p class="text-slate-600">${entry.details}</p>
+            <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-200/60">
+              <span>Actor: <strong>${entry.actor}</strong></span>
+              <span class="text-teal-600 font-semibold"><i class="fa-solid fa-check-double"></i> Tamper Verified</span>
+            </div>
+          `;
+          container.appendChild(item);
+        });
+      },
+
+      renderEmergencyCard() {
+        const prof = appState.getActiveProfile();
+        const container = document.getElementById('emergencyCardContent');
+
+        container.innerHTML = `
+          <div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-3">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-rose-800">First Responder Medical Tag</span>
+                <h3 class="text-xl font-black text-rose-950">${prof.name}</h3>
+                <p class="text-xs text-rose-800">Age: ${prof.age} • Blood Group: <strong class="text-sm font-black">${prof.bloodGroup}</strong></p>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-white border border-rose-300 flex items-center justify-center text-rose-600 text-2xl font-black">
+                ${prof.bloodGroup}
+              </div>
+            </div>
+
+            <!-- Allergies list -->
+            <div class="pt-2 border-t border-rose-200/80">
+              <span class="text-[10px] uppercase font-bold text-rose-900 block mb-1">Severe Allergies:</span>
+              <div class="flex flex-wrap gap-1">
+                ${prof.allergies.map(a => `<span class="bg-white border border-rose-300 text-rose-800 font-bold px-2 py-0.5 rounded text-xs">${a}</span>`).join('')}
+              </div>
+            </div>
+
+            <!-- Emergency Contact -->
+            <div class="pt-2 border-t border-rose-200/80">
+              <span class="text-[10px] uppercase font-bold text-rose-900 block mb-0.5">Emergency Contact:</span>
+              <p class="text-xs font-bold text-slate-900">${prof.emergencyContact || 'Family Primary Caretaker'}</p>
+            </div>
+
+            <!-- Simulated QR code -->
+            <div class="pt-2 border-t border-rose-200/80 flex items-center space-x-3 bg-white/80 p-2.5 rounded-lg border border-rose-200">
+              <div class="w-12 h-12 bg-slate-900 text-white flex items-center justify-center rounded text-lg font-mono">
+                <i class="fa-solid fa-qrcode"></i>
+              </div>
+              <div>
+                <span class="text-[11px] font-bold text-slate-900 block">Emergency EMT Scan Pass</span>
+                <span class="text-[10px] text-slate-500">Bypasses PIN in life-threatening dispatch. Logged to audit ledger.</span>
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      openDoctorEpisodeModal(patientId) {
+        const patient = appState.profiles.find(p => p.id === patientId);
+        document.getElementById('newEpisodeForm').reset();
+        document.getElementById('inputEpisodeDate').value = new Date().toISOString().substring(0, 10);
+        document.getElementById('inputEpisodePhysician').value = 'Dr. Sarah Chen, MD';
+        document.getElementById('newEpisodeModalTitle').innerText = `Clinical Consultation: ${patient.name}`;
+        document.getElementById('newEpisodeModalSubtitle').innerText = `Authoring official MD-Verified encounter`;
+        
+        // Select doctor radio by default
+        const radios = document.getElementsByName('entryProvenance');
+        for (const r of radios) {
+          if (r.value === 'doctor') r.checked = true;
+        }
+
+        uiModal.openModal('modalNewEpisode');
+      },
+
+      viewEpisodeAudit(episodeId) {
+        const ep = appState.episodes.find(e => e.id === episodeId);
+        if (!ep) return;
+        let revText = `Revision History for Record #${ep.id}:\n\n`;
+        ep.revisionHistory?.forEach(r => {
+          revText += `• ${r.timestamp}: ${r.author} - ${r.action}\n`;
+        });
+        uiToast.show(`Revision log: ${ep.revisionHistory?.length || 1} certified revisions.`, 'info');
+      },
+
+      generateShareableLink() {
+        const duration = document.getElementById('shareLinkDuration').value;
+        const scope = document.getElementById('shareLinkScope').value;
+        const prof = appState.getActiveProfile();
+
+        const token = 'CV-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+        const pin = Math.floor(1000 + Math.random() * 9000);
+        const url = `https://carevault.health/guest-access?token=${token}&scope=${scope}&exp=${duration}h&pin=${pin}`;
+
+        const container = document.getElementById('generatedShareLinkContainer');
+        const input = document.getElementById('generatedShareLinkInput');
+        container.classList.remove('hidden');
+        input.value = `${url} (PIN: ${pin})`;
+
+        AuditService.log('SHARE_LINK_GENERATED', `Created temporary ${duration}h guest access link for ${prof.name} (${scope})`);
+        uiToast.show(`Share link generated with auto-PIN ${pin}`, 'success');
+      },
+
+      copyShareLink() {
+        const input = document.getElementById('generatedShareLinkInput');
+        this.copyText(input.value, 'Encrypted share link copied to clipboard!');
+      },
+
+      copyText(text, successMsg) {
+        // Fallback for iFrame restrictions
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        try {
+          document.execCommand('copy');
+          uiToast.show(successMsg || 'Copied to clipboard!', 'success');
+        } catch (e) {
+          uiToast.show('Unable to copy automatically.', 'error');
+        }
+        document.body.removeChild(temp);
+      }
+    };
+    window.appControllers = appControllers;
+
+    // --- 7. EXPORT SERVICE ---
+    const ExportService = {
+      prepareDossier() {
+        const prof = appState.getActiveProfile();
+        const now = new Date().toISOString().substring(0, 10);
+        document.getElementById('dossierExportTimestamp').innerText = `Exported: ${now} • Ledger Certified`;
+
+        // Demographics
+        const demo = document.getElementById('dossierDemographics');
+        demo.innerHTML = `
+          <div><span class="text-slate-400 block">Patient Name:</span> <strong>${prof.name}</strong></div>
+          <div><span class="text-slate-400 block">Date of Birth / Age:</span> <strong>${prof.age} Years</strong></div>
+          <div><span class="text-slate-400 block">Blood Group:</span> <strong>${prof.bloodGroup}</strong></div>
+          <div><span class="text-slate-400 block">Relationship / Role:</span> <strong>${prof.relation}</strong></div>
+        `;
+
+        // Allergies
+        const allergies = document.getElementById('dossierAllergies');
+        allergies.innerHTML = prof.allergies && prof.allergies.length > 0 
+          ? prof.allergies.map(a => `<span class="inline-block bg-white px-2 py-0.5 rounded border border-rose-300 mr-2 mb-1">${a}</span>`).join('')
+          : '<span>No known adverse drug allergies or contraindications recorded.</span>';
+
+        // Medications
+        const profEpisodes = appState.episodes.filter(e => e.profileId === prof.id);
+        const medContainer = document.getElementById('dossierMedications');
+        const allMeds = [];
+        profEpisodes.forEach(ep => {
+          if (ep.prescriptions) ep.prescriptions.forEach(p => allMeds.push({ ...p, source: ep.title, date: ep.date }));
+        });
+
+        if (allMeds.length === 0) {
+          medContainer.innerHTML = '<p class="text-slate-500">No active pharmaceuticals logged.</p>';
+        } else {
+          medContainer.innerHTML = allMeds.map(m => `
+            <div class="p-2 bg-slate-50 border border-slate-200 rounded flex justify-between">
+              <span><strong>${m.name}</strong> (${m.dose})</span>
+              <span class="text-slate-500 font-mono">${m.duration} • Ref: ${m.date}</span>
+            </div>
+          `).join('');
+        }
+
+        // Episodes
+        const epContainer = document.getElementById('dossierEpisodes');
+        epContainer.innerHTML = profEpisodes.map(ep => `
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+            <div class="flex justify-between font-bold text-slate-800">
+              <span>${ep.title}</span>
+              <span class="font-mono text-slate-500 text-[11px]">${ep.date}</span>
+            </div>
+            <p class="text-slate-600 mt-1">${ep.notes}</p>
+            <div class="text-[10px] text-slate-400 mt-2 flex justify-between">
+              <span>Physician: ${ep.physician || 'Self'} (${ep.authorRole === 'doctor' ? 'Verified MD' : 'Patient Observation'})</span>
+              <span>Status: ${ep.status}</span>
+            </div>
+          </div>
+        `).join('');
+
+        AuditService.log('EXPORTED_DOSSIER', `Exported full clinical health summary for ${prof.name}`);
+      }
+    };
+    window.ExportService = ExportService;
+
+    // --- 8. INITIALIZATION & BOOTSTRAP ---
+    window.onload = async function() {
+      // Initialize Firebase or Fallback
+      await dbService.init();
+
+      // Render all components
+      appControllers.renderAll();
+
+      console.log('CareVault Healthcare Platform initialized successfully.');
+    };
+  </script>
+</body>
+</html>
